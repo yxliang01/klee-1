@@ -618,7 +618,10 @@ void Dependency::addDependencyViaExternalFunction(
   if (source.isNull() || target.isNull())
     return;
 
-  if (!source->getLocations().empty()) {
+#ifdef ENABLE_Z3
+  if (!NoBoundInterpolation) {
+    std::set<ref<TxStateAddress> > locations = source->getLocations();
+    if (!locations.empty()) {
       std::string reason = "";
       if (debugSubsumptionLevel >= 1) {
         llvm::raw_string_ostream stream(reason);
@@ -630,7 +633,9 @@ void Dependency::addDependencyViaExternalFunction(
         stream.flush();
       }
       markPointerFlow(source, source, reason);
+    }
   }
+#endif
 
   // Add new location to the target in case of pointer return value
   llvm::Type *t = target->getValue()->getType();
@@ -1483,7 +1488,12 @@ void Dependency::executeMemoryOperation(
     std::vector<ref<Expr> > &args, bool inBounds, bool symbolicExecutionError) {
   execute(instr, callHistory, args, symbolicExecutionError);
 #ifdef ENABLE_Z3
-  if (boundInterpolation(instr) && inBounds) {
+  if (NoBoundCheck)
+    // No Bounds check is needed to be performed. So, we just return. This is
+    // important when the user wants to get the skeleton tree.
+    return;
+
+  if (!NoBoundInterpolation && inBounds) {
     // The bounds check has been proven valid, we keep the dependency on the
     // address. Calling va_start within a variadic function also triggers memory
     // operation, but we ignored it here as this method is only called when load
@@ -1509,34 +1519,37 @@ void Dependency::executeMemoryOperation(
       // Limit interpolation to only within function tracerx_check
       ref<TxStateValue> val(getLatestValueForMarking(addressOperand, address));
       if (llvm::isa<llvm::LoadInst>(instr) && !val->getLocations().empty()) {
-        std::set<ref<TxStateAddress> > locations(val->getLocations());
-        for (std::set<ref<TxStateAddress> >::iterator it = locations.begin(),
-                                                      ie = locations.end();
-             it != ie; ++it) {
-          if (llvm::ConstantExpr *ce = llvm::dyn_cast<llvm::ConstantExpr>(
-                  (*it)->getContext()->getValue())) {
-            if (ce->getOpcode() == llvm::Instruction::GetElementPtr) {
-              std::string reason = "";
-              if (debugSubsumptionLevel >= 1) {
-                llvm::raw_string_ostream stream(reason);
-                stream << "pointer use [";
-                if (instr->getParent()->getParent()) {
-                  stream << instr->getParent()->getParent()->getName().str()
-                         << ": ";
+        if (instr->getParent()->getParent()->getName().str() ==
+            "tracerx_check") {
+          std::set<ref<TxStateAddress> > locations(val->getLocations());
+          for (std::set<ref<TxStateAddress> >::iterator it = locations.begin(),
+                                                        ie = locations.end();
+               it != ie; ++it) {
+            if (llvm::ConstantExpr *ce = llvm::dyn_cast<llvm::ConstantExpr>(
+                    (*it)->getContext()->getValue())) {
+              if (ce->getOpcode() == llvm::Instruction::GetElementPtr) {
+                std::string reason = "";
+                if (debugSubsumptionLevel >= 1) {
+                  llvm::raw_string_ostream stream(reason);
+                  stream << "pointer use [";
+                  if (instr->getParent()->getParent()) {
+                    stream << instr->getParent()->getParent()->getName().str()
+                           << ": ";
+                  }
+                  if (llvm::MDNode *n = instr->getMetadata("dbg")) {
+                    llvm::DILocation loc(n);
+                    stream << "Line " << loc.getLineNumber();
+                  }
+                  stream << "]";
+                  stream.flush();
                 }
-                if (llvm::MDNode *n = instr->getMetadata("dbg")) {
-                  llvm::DILocation loc(n);
-                  stream << "Line " << loc.getLineNumber();
+                if (ExactAddressInterpolant) {
+                  markAllValues(addressOperand, address, reason);
+                } else {
+                  markAllPointerValues(addressOperand, address, reason);
                 }
-                stream << "]";
-                stream.flush();
+                break;
               }
-              if (ExactAddressInterpolant) {
-                markAllValues(addressOperand, address, reason);
-              } else {
-                markAllPointerValues(addressOperand, address, reason);
-              }
-              break;
             }
           }
         }
@@ -1646,23 +1659,6 @@ void Dependency::markAllPointerValues(llvm::Value *val, ref<Expr> address,
   markPointerFlow(value, value, bounds, reason);
 }
 
-/// \brief Tests if bound interpolation shold be enabled
-bool Dependency::boundInterpolation(llvm::Value *val) {
-  if (SpecialFunctionBoundInterpolation) {
-    if (!val)
-      return true;
-
-    if (llvm::Instruction *instr = llvm::dyn_cast<llvm::Instruction>(val)) {
-      if (instr->getParent() && instr->getParent()->getParent() &&
-          instr->getParent()->getParent()->getName().str() == "tracerx_check")
-        return true;
-    }
-    return false;
-  }
-  return true;
-}
-
-/// \brief Print the content of the object to the LLVM error stream
 void Dependency::print(llvm::raw_ostream &stream) const {
   this->print(stream, 0);
 }
