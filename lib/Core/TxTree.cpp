@@ -2127,6 +2127,10 @@ void TxTree::executeOnNode(TxTreeNode *node, llvm::Instruction *instr,
   symbolicExecutionError = false;
 }
 
+bool TxTree::isSpeculationNode() {
+  return currentTxTreeNode->isSpeculationNode();
+}
+
 void TxTree::printNode(llvm::raw_ostream &stream, TxTreeNode *n,
                        std::string edges) const {
   if (n->left != 0) {
@@ -2224,6 +2228,9 @@ TxTreeNode::TxTreeNode(
   // Inherit the abstract dependency or NULL
   dependency = new TxDependency(_parent ? _parent->dependency : 0, _targetData,
                                 _globalAddresses);
+
+  // Set speculation flag to false
+  speculationFlag = 0;
 }
 
 TxTreeNode::~TxTreeNode() {
@@ -2238,6 +2245,8 @@ ref<Expr> TxTreeNode::getInterpolant(
   ref<Expr> expr = dependency->packInterpolant(replacements, substitution);
   return expr;
 }
+
+bool TxTreeNode::isSpeculationNode() { return speculationFlag; }
 
 void TxTreeNode::addConstraint(ref<Expr> &constraint, llvm::Value *condition) {
   TimerStatIncrementer t(addConstraintTime);
