@@ -10,6 +10,7 @@
 #include "Executor.h"
 #include "Context.h"
 #include "CoreStats.h"
+#include "ExecutorTimerInfo.h"
 #include "ExternalDispatcher.h"
 #include "ImpliedValue.h"
 #include "Memory.h"
@@ -18,10 +19,10 @@
 #include "Searcher.h"
 #include "SeedInfo.h"
 #include "SpecialFunctionHandler.h"
+#include "Speculation.h"
 #include "StatsTracker.h"
 #include "TimingSolver.h"
 #include "UserSearcher.h"
-#include "ExecutorTimerInfo.h"
 
 #include "klee/ExecutionState.h"
 #include "klee/Expr.h"
@@ -908,8 +909,7 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
         current.pathOS << "1";
       }
     }
-
-    if (Speculation) {
+    if (Speculation && speculativeRun::isSpeculable(current)) {
       // Storing the unsatCore and pointer to the solver
       // so, in case speculation fails the unsatcore can
       // be used to perform markings.
@@ -974,7 +974,7 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
       }
     }
 
-    if (Speculation) {
+    if (Speculation && speculativeRun::isSpeculable(current)) {
       // Storing the unsatCore and pointer to the solver
       // so, in case speculation fails the unsatcore can
       // be used to perform markings.
@@ -985,7 +985,7 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
       // after the other node is traversed.
 
       TimerStatIncrementer timer(stats::forkTime);
-      ExecutionState *speculationTrueState, *falseState = &current;
+      ExecutionState *speculationTrueState = &current, *falseState;
 
       ++stats::forks;
 
