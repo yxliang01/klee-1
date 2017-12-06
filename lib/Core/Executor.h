@@ -330,6 +330,9 @@ private:
   StatePair addSpeculationNode(ExecutionState &current, ref<Expr> condition,
                                bool isInternal, bool falseBranchIsInfeasible);
 
+  void speculativeBackJump(ExecutionState &current,
+                           std::vector<ExecutionState *> states);
+
   // Speculation fork performs fork in the speculation mode.
   StatePair speculationFork(ExecutionState &current, ref<Expr> condition,
                             bool isInternal);
