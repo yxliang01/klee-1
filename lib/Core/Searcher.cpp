@@ -132,8 +132,12 @@ void BFSSearcher::update(ExecutionState *current,
 
 ///
 
+ITERDEPSearcher() {
+    currentDepth = 0;
+}
+
 ExecutionState &ITERDEPSearcher::selectState() {
-    const ExecutionState state = *states.front();
+    ExecutionState &state = *states.front();
     assert(state.depth >= currentDepth && "Iterdep searcher implemented incorrectly");
     currentDepth = state.depth;
     return state;
