@@ -132,7 +132,7 @@ void BFSSearcher::update(ExecutionState *current,
 
 ///
 
-ITERDEPSearcher() {
+ITERDEPSearcher::ITERDEPSearcher(void) {
     currentDepth = 0;
 }
 

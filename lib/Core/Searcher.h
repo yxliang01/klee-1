@@ -114,6 +114,7 @@ namespace klee {
     unsigned currentDepth;
 
   public:
+    ITERDEPSearcher(void);
     ExecutionState &selectState();
     void update(ExecutionState *current,
                 const std::vector<ExecutionState *> &addedStates,
