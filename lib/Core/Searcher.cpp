@@ -132,7 +132,12 @@ void BFSSearcher::update(ExecutionState *current,
 
 ///
 
-ExecutionState &ITERDEPSearcher::selectState() { return *states.front(); }
+ExecutionState &ITERDEPSearcher::selectState() {
+    const ExecutionState state = *states.front();
+    assert(state.depth >= currentDepth && "Iterdep searcher implemented incorrectly");
+    currentDepth = state.depth;
+    return state;
+}
 
 void
 ITERDEPSearcher::update(ExecutionState *current,
@@ -141,10 +146,15 @@ ITERDEPSearcher::update(ExecutionState *current,
   for (std::vector<ExecutionState *>::const_iterator it = addedStates.begin(),
                                                      ie = addedStates.end();
        it != ie; ++it) {
-    if ((*it)->depth <= 10) {
+
+    const unsigned itDepth = (*it)->depth;
+
+    assert (itDepth >= currentDepth && "Iterdep searcher implemented incorrectly");
+
+    if(itDepth == currentDepth) {
+      states.insert(states.begin(), (*it));
+    } else { // itDepth > currentDepth
       states.insert(states.end(), (*it));
-    } else {
-      // Do something, otherwise, the code will fail
     }
   }
 

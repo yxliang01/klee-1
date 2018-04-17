@@ -111,6 +111,7 @@ namespace klee {
 
   class ITERDEPSearcher : public Searcher {
     std::deque<ExecutionState *> states;
+    unsigned currentDepth = 0;
 
   public:
     ExecutionState &selectState();
