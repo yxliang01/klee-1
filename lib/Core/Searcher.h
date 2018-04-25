@@ -110,10 +110,16 @@ namespace klee {
   };
 
   class ITERDEPSearcher : public Searcher {
+
     std::deque<ExecutionState *> states;
-    unsigned currentDepth;
+
+    // states that are deeper than currentMaxDepth
+    std::deque<ExecutionState *> outside_scope_states;
+    unsigned currentMaxDepth;
 
   public:
+    const unsigned INIT_MAX_DEPTH = 10;
+    const unsigned MAX_DEPTH_INC = 5;
     ITERDEPSearcher(void);
     ExecutionState &selectState();
     void update(ExecutionState *current,

@@ -133,32 +133,40 @@ void BFSSearcher::update(ExecutionState *current,
 ///
 
 ITERDEPSearcher::ITERDEPSearcher(void) {
-    currentDepth = 0;
+    currentMaxDepth = INIT_MAX_DEPTH;
+    klee_message("[ITERDEP] currentMaxDepth: %d\n", currentMaxDepth);
 }
 
 ExecutionState &ITERDEPSearcher::selectState() {
-    ExecutionState &state = *states.front();
-    assert(state.depth >= currentDepth && "Iterdep searcher implemented incorrectly");
-    currentDepth = state.depth;
+    if(states.size() == 0) {
+      // All states having depth <= currentMaxDepth have been processed, now going to deep
+      states.swap(outside_scope_states);
+      currentMaxDepth += MAX_DEPTH_INC;
+      klee_message("[ITERDEP] currentMaxDepth now is %d\n", currentMaxDepth);
+    }
+
+    ExecutionState &state = *states.back();
+    klee_message("state.depth: %d\n", state.depth);
+    assert(state.depth <= currentMaxDepth && "Iterdep searcher implemented incorrectly");
+
     return state;
 }
 
-void
-ITERDEPSearcher::update(ExecutionState *current,
+
+void ITERDEPSearcher::update(ExecutionState *current,
                         const std::vector<ExecutionState *> &addedStates,
                         const std::vector<ExecutionState *> &removedStates) {
+
   for (std::vector<ExecutionState *>::const_iterator it = addedStates.begin(),
                                                      ie = addedStates.end();
        it != ie; ++it) {
 
     const unsigned itDepth = (*it)->depth;
 
-    assert (itDepth >= currentDepth && "Iterdep searcher implemented incorrectly");
-
-    if(itDepth == currentDepth) {
-      states.insert(states.begin(), (*it));
-    } else { // itDepth > currentDepth
+    if(itDepth <= currentMaxDepth) {
       states.insert(states.end(), (*it));
+    } else { // itDepth > currentMaxDepth
+      outside_scope_states.insert(outside_scope_states.end(), (*it));
     }
   }
 
@@ -166,24 +174,24 @@ ITERDEPSearcher::update(ExecutionState *current,
                                                      ie = removedStates.end();
        it != ie; ++it) {
     ExecutionState *es = *it;
-    if (es == states.front()) {
-      states.pop_front();
-    } else {
-      bool ok = false;
 
-      for (std::deque<ExecutionState *>::iterator it = states.begin(),
-                                                  ie = states.end();
-           it != ie; ++it) {
-        if (es == *it) {
-          states.erase(it);
-          ok = true;
-          break;
-        }
+    auto ele = std::find(states.begin(), states.end(), es);
+    if(ele != states.end()) {
+
+      states.erase(ele);
+
+    } else {
+
+      ele = std::find(outside_scope_states.begin(), outside_scope_states.end(), es);
+      if(ele != outside_scope_states.end()) {
+        outside_scope_states.erase(ele);
+      } else {
+        klee_error("invalid state removed");
       }
 
-      assert(ok && "invalid state removed");
     }
   }
+
 }
 
 ///

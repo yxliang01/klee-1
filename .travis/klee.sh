@@ -33,7 +33,7 @@ if [ "${KLEE_UCLIBC}" != "0" ]; then
     git clone --depth 1 -b ${KLEE_UCLIBC} git://github.com/klee/klee-uclibc.git
     cd klee-uclibc
     ./configure --make-llvm-lib --with-cc "${KLEE_CC}" --with-llvm-config /usr/bin/llvm-config-${LLVM_VERSION}
-    make
+    make -j`nproc`
     KLEE_UCLIBC_CONFIGURE_OPTION="--with-uclibc=$(pwd) --enable-posix-runtime"
     cd ../
 else
@@ -98,7 +98,8 @@ ${KLEE_SRC}/configure --with-llvmsrc=/usr/lib/llvm-${LLVM_VERSION}/build \
             CXXFLAGS="${COVERAGE_FLAGS}" \
             && make DISABLE_ASSERTIONS=${DISABLE_ASSERTIONS} \
                     ENABLE_OPTIMIZED=${ENABLE_OPTIMIZED} \
-                    ENABLE_SHARED=0
+                    ENABLE_SHARED=0 \
+                    -j`nproc`
 
 ###############################################################################
 # Testing
