@@ -134,7 +134,7 @@ void BFSSearcher::update(ExecutionState *current,
 
 ITERDEPSearcher::ITERDEPSearcher(void) {
     currentMaxDepth = INIT_MAX_DEPTH;
-    klee_message("[ITERDEP] currentMaxDepth: %d\n", currentMaxDepth);
+    klee_message("[ITERDEP] currentMaxDepth: %d", currentMaxDepth);
 }
 
 ExecutionState &ITERDEPSearcher::selectState() {
@@ -142,11 +142,11 @@ ExecutionState &ITERDEPSearcher::selectState() {
       // All states having depth <= currentMaxDepth have been processed, now going to deep
       states.swap(outside_scope_states);
       currentMaxDepth += MAX_DEPTH_INC;
-      klee_message("[ITERDEP] currentMaxDepth now is %d\n", currentMaxDepth);
+      klee_message("[ITERDEP] currentMaxDepth now is %d", currentMaxDepth);
     }
 
     ExecutionState &state = *states.back();
-    klee_message("state.depth: %d\n", state.depth);
+    klee_message("state.depth: %d", state.depth);
     assert(state.depth <= currentMaxDepth && "Iterdep searcher implemented incorrectly");
 
     return state;
