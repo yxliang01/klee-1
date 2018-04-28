@@ -118,7 +118,8 @@ sudo mv ../Makefile.unittest /usr/lib/llvm-${LLVM_VERSION}/build/unittests/
 make unittests \
     DISABLE_ASSERTIONS=${DISABLE_ASSERTIONS} \
     ENABLE_OPTIMIZED=${ENABLE_OPTIMIZED} \
-    ENABLE_SHARED=0
+    ENABLE_SHARED=0 \
+    -j`nproc`
 RETURN="$?"
 
 ###############################################################################
@@ -130,7 +131,8 @@ cd test
 make lit.site.cfg \
     DISABLE_ASSERTIONS=${DISABLE_ASSERTIONS} \
     ENABLE_OPTIMIZED=${ENABLE_OPTIMIZED} \
-    ENABLE_SHARED=0
+    ENABLE_SHARED=0 \
+    -j`nproc`
 
 set +e # We want to let all the tests run before we exit
 lit -v .

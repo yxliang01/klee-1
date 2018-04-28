@@ -118,8 +118,8 @@ namespace klee {
     unsigned currentMaxDepth;
 
   public:
-    const unsigned INIT_MAX_DEPTH = 10;
-    const unsigned MAX_DEPTH_INC = 5;
+    const static unsigned INIT_MAX_DEPTH = 10;
+    const static unsigned MAX_DEPTH_INC = 5; // Must be > 0
     ITERDEPSearcher(void);
     ExecutionState &selectState();
     void update(ExecutionState *current,

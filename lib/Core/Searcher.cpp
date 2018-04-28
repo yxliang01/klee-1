@@ -134,22 +134,42 @@ void BFSSearcher::update(ExecutionState *current,
 
 ITERDEPSearcher::ITERDEPSearcher(void) {
     currentMaxDepth = INIT_MAX_DEPTH;
-    klee_message("[ITERDEP] currentMaxDepth: %d", currentMaxDepth);
+    klee_message("[ITERDEP] currentMaxDepth: %u", currentMaxDepth);
 }
 
 ExecutionState &ITERDEPSearcher::selectState() {
-    if(states.size() == 0) {
-      // All states having depth <= currentMaxDepth have been processed, now going to deep
-      states.swap(outside_scope_states);
-      currentMaxDepth += MAX_DEPTH_INC;
-      klee_message("[ITERDEP] currentMaxDepth now is %d", currentMaxDepth);
+
+    ExecutionState *state;
+
+    for(state = states.back(); !states.empty() && state->depth > currentMaxDepth; state = states.back()) {
+
+      // TODO: DEBUG statement - to be removed
+//      klee_message("state.depth > currentMaxDepth : state.depth: %u addr: %p", state->depth, state);
+
+      states.pop_back();
+      outside_scope_states.push_front(state);
     }
 
-    ExecutionState &state = *states.back();
-    klee_message("state.depth: %d", state.depth);
-    assert(state.depth <= currentMaxDepth && "Iterdep searcher implemented incorrectly");
+    if(states.empty()) {
+      // All states having depth <= currentMaxDepth have been processed, now going to deeper
+      states.swap(outside_scope_states);
+      currentMaxDepth += MAX_DEPTH_INC;
+      klee_message("[ITERDEP] currentMaxDepth now is %u", currentMaxDepth);
+      state = states.back();
+    }
 
-    return state;
+    // TODO: DEBUG statement - to be removed
+//    klee_message("FINAL state.depth: %u addr: %p", state->depth, state);
+
+    if(state->depth > currentMaxDepth) {
+      for(auto x : states) {
+      // TODO: DEBUG statement - to be removed
+//        klee_message("[DEBUG] state.depth: %u addr: %p", x->depth, x);
+      }
+      assert(state->depth <= currentMaxDepth && "Iterdep searcher implemented incorrectly");
+    }
+
+    return *state;
 }
 
 
@@ -164,9 +184,13 @@ void ITERDEPSearcher::update(ExecutionState *current,
     const unsigned itDepth = (*it)->depth;
 
     if(itDepth <= currentMaxDepth) {
-      states.insert(states.end(), (*it));
+      // TODO: DEBUG statement - to be removed
+//      klee_message("toState: itDepth: %u addr: %p", itDepth, (*it));
+      states.push_back((*it));
     } else { // itDepth > currentMaxDepth
-      outside_scope_states.insert(outside_scope_states.end(), (*it));
+      // TODO: DEBUG statement - to be removed
+//      klee_message("toOutside_scope_states: itDepth: %u addr: %p", itDepth, (*it));
+      outside_scope_states.push_front((*it));
     }
   }
 
@@ -175,7 +199,7 @@ void ITERDEPSearcher::update(ExecutionState *current,
        it != ie; ++it) {
     ExecutionState *es = *it;
 
-    auto ele = std::find(states.begin(), states.end(), es);
+    std::deque<ExecutionState *>::iterator ele = std::find(states.begin(), states.end(), es);
     if(ele != states.end()) {
 
       states.erase(ele);

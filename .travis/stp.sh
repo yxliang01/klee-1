@@ -13,7 +13,7 @@ if [ "x${STP_VERSION}" != "x" ]; then
     cd build
     MINISAT_DIR=`pwd`
     cmake -DCMAKE_INSTALL_PREFIX=/usr ..
-    make
+    make -j`nproc`
     sudo make install
     cd ../../
 

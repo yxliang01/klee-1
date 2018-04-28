@@ -52,6 +52,11 @@ RUN useradd -m klee && \
     echo klee:klee | chpasswd && \
     cp /etc/sudoers /etc/sudoers.bak && \
     echo 'klee  ALL=(root) NOPASSWD: ALL' >> /etc/sudoers
+
+# For CS6215 assignment 1
+
+RUN apt-get install zsh -y
+
 USER klee
 WORKDIR /home/klee
 
