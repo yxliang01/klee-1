@@ -169,6 +169,9 @@ ExecutionState &ITERDEPSearcher::selectState() {
       assert(state->depth <= currentMaxDepth && "Iterdep searcher implemented incorrectly");
     }
 
+    assert((currentMaxDepth == INIT_MAX_DEPTH || state->depth > currentMaxDepth - MAX_DEPTH_INC) &&
+      "Iterdep searcher implemented incorrectly");
+
     return *state;
 }
 
